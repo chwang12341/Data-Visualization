@@ -516,6 +516,91 @@ if __name__ == '__main__':
 
 ![image6](C:\Users\user\Desktop\Data-Visualization\Dash\4\images\image6.png)
 
+## 實作20. 只防止部分更新的方法- dash.no_update
+
++ 使用情境: 假設我們有兩個輸出值A與B，一般情況下只會觸動一個輸出值A，但在某些狀況下，我希望能觸動輸出值B，但又要保留上一次的輸出值A，這時就會需要用到dash.no_update這個方法
+
++ 程式碼:
+
+```Python
+## 導入dash所需的套件
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+from dash.exceptions import PreventUpdate
+
+
+## 導入外部樣式表
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+## 啟動dash
+app = dash.Dash(__name__, external_stylesheets = external_stylesheets)
+
+## 網頁介面
+app.layout = html.Div([
+    html.Label('輸入一個數值來找尋它的質因子'),
+    
+    
+    ## 製作一個輸入格
+    dcc.Input(id = 'num', type = 'number', debounce = True, min = 1, step = 1),
+    
+    
+    ## 輸出結果
+    html.P(id = 'error', style = {'font':10, 'color':'darkblue'}),
+    html.P(id = 'prime_factor')
+])
+
+
+## 使用callback，來實現只質因子的功能，以及當輸入質就是質因子時，只防止部分顯示的功能
+@app.callback(
+    [
+     Output(component_id = 'prime_factor', component_property = 'children'),
+     Output(component_id = 'error', component_property = 'children')
+    ],
+    [Input(component_id = 'num', component_property = 'value')]
+)
+def output_prime_factor(num):
+    ## 當使用者還未輸入任何值時
+    if num == None:
+        ## 防止更新任何的輸出結果
+        raise PreventUpdate
+
+    ## 計算輸入值的質因素
+    prime_factors = find_prime_factors(num)
+    
+
+    ## 如果質因素只有一個，輸出它自己就是質因素，並且不更新上一次輸入值的輸出結果，也就是保留了上一次的結果
+    if len(prime_factors) == 1:
+        return dash.no_update, '{} 本身就是質因子!!當樹入值就是質因子時，上一次不是本身是質因子的輸出結果不會更新'.format(num)
+    
+    ## 輸出所有的質因子
+    return '{} 的質因素: {}'.format(num, '*'.join(str(f) for f in prime_factors)),''
+
+
+## 找尋質因素
+def find_prime_factors(num):
+    n = 2
+    output_result = []
+    
+    while n <= num:
+        if ((num % n) == 0):
+            output_result.append(n)
+            num = int(num / n)
+        else:
+            n += 1
+            
+    return output_result
+
+## 啟動Local Server
+if __name__ == '__main__':
+    app.run_server()
+
+```
+
+
+
+![image7](images\image7.png)
 
 
 
@@ -524,7 +609,137 @@ if __name__ == '__main__':
 
 
 
-**感謝您的閱讀，如果覺得我還可以，哈哈，幫我拍拍手鼓勵一下喔，感恩**
+
+
+
+
+
+
+
+#### 補充: component_property 如何賦予值
+
++ 我們在寫callback的時候，Input與Output一定會有兩個參數，component_id 與 component_property，component_id很容易理解就是針對我們要操作的元件id，而component_property的給值我們時常看到像是"children"、"figure"、"value"、"options"等等，為什麼是這樣給呢?
+
++ 其實是這樣的不同的控制元件，像是Slider()、Grap()、RadioItems()，裡面都有自己的屬性參數，像是RadioItems就會有options, value等，而Graph()就會有figure等，那component_property指的就是我們要針對哪一個元件底下的參數進行操作
+
++ 簡單來說component_id是欲操作的元件id，而component_property指的是欲操作此元件底下的哪個參數值
+
++ 示意圖
+
+  
+
+![image8](images\image8.png)
+
+
+
+#### 實作21. 使用dash.callback_context來了解哪些輸入元件被觸發的狀況
+
++ 使用情境: 假設有一個班級要選班長，然後有四位的候選人，班上同學依序上來投票，要能及時呈現各候選人的票數，以及當下上來投票的同學投給誰
+
++ 程式碼:
+
+```Python
+## 導入dash所需的套件
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+
+import json
+
+## 導入外部樣式表
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+## 啟動dash
+app = dash.Dash(__name__, external_stylesheets = external_stylesheets)
+
+
+## 網頁介面
+app.layout = html.Div([
+    html.Label("班長候選人", style = {'color':'darkblue'}),
+    
+    ## 製作按鈕
+    html.Button('小紅', id = 'btn_1'),
+    html.Button('小黃', id = 'btn_2'),
+    html.Button('小白', id = 'btn_3'),
+    html.Button('小紫', id = 'btn_4'),
+    
+    ## 輸出結果
+    html.Div(id = 'result_container')
+])
+
+## 使用callback，來記錄與呈現按鈕資訊
+@app.callback(
+    Output('result_container', 'children'),
+    [
+        Input('btn_1', 'n_clicks'),
+        Input('btn_2', 'n_clicks'),
+        Input('btn_3', 'n_clicks'),
+        Input('btn_4', 'n_clicks')
+    ]
+)
+def display_voting_result(btn1, btn2, btn3, btn4):
+    
+    ## 啟用dash.callback_context
+    cbc = dash.callback_context
+    
+    ## 用json呈現dash.callback_context如何存取觸發數據
+    cbc_json = json.dumps({
+        'states': cbc.states,
+        'triggered': cbc.triggered,
+        'inputs': cbc.inputs
+    }, indent = 2)
+    
+    ## 是否觸發按鈕
+    ## 觸發按鈕
+    if cbc.triggered:
+        ## 取得觸發按鈕的prop_id，並把後面的n_clicks與前面的btn_拿掉
+        bid = cbc.triggered[0]["prop_id"].split('.')[0].split('_')[1]
+        
+        button_id = '候選人 '+ bid
+        
+    ## 沒有觸發按鈕
+    else: 
+        button_id = '還沒開始投票'
+        
+    
+    return html.Div([
+        html.Tr([
+            html.Th('小紅'),
+            html.Th('小黃'),
+            html.Th('小白'),
+            html.Th('小紫'),
+            html.Th('這位同學投票給')
+        ]),
+        
+
+        html.Tr([
+            html.Td(btn1 or 0),
+            html.Td(btn2 or 0),
+            html.Td(btn3 or 0),
+            html.Td(btn4 or 0),
+            html.Td(button_id)
+        ]),
+        ## 顯示json格式
+        html.Pre(cbc_json)
+    ])
+
+## 啟動Local Server
+if __name__ == '__main__':
+    app.run_server()
+```
+
+
+
+![image9](images\image9.png)
+
+
+
+
+
+
+
+**對Dash有了很多理解後，結合之前Plotly視覺化套件，我們就能在網頁實現互動視覺圖囉，如果想了解Plotly的話，也可以參考我的文章喔，感謝您的閱讀，如果覺得我還可以，哈哈，幫我拍拍手鼓勵一下喔，感恩**
 
 
 
