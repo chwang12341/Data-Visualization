@@ -217,6 +217,10 @@ pof.iplot(figure, filename = 'Plotly-Scatter', show_link = True, link_text = "Pl
 
 
 
+
+
+
+
 ## 4. 直方圖 plotly.graph_objs.Histogram()
 
 
@@ -512,6 +516,10 @@ pof.iplot(figure, filename = 'Plotly-Scatter', show_link = True, link_text = "Pl
 
 
 大家是否已經迫不及待想拿手邊的數據試試了，Plotly繪出來的圖真的好美~~ 希望這篇有幫助到您!!
+
+
+
+
 
 
 
