@@ -1,4 +1,4 @@
-# 資料視覺化(Data Visualization) - Python 套件 - 互動式繪圖 - 各種類型圖的繪製 - Plotly筆記(六)
+# 資料視覺化(Data Visualization) - Python 套件 - 互動式繪圖 - 各種類型圖的繪製 - Plotly筆記(七)
 
 
 
