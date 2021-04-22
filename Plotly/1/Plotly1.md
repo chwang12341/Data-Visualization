@@ -161,9 +161,12 @@ import plotly.graph_objs as go
 import plotly.offline as pof
 
 ## 設定為離線
-pof.iplot([{'x': [1, 7, 8], 'y': [3, 8, 14]}], filename = 'My First Plotly', show_link = True, link_text = "Plotly Links", image = 'png', image_hight = 800, image_width = 900)
-
+pof.iplot([{'x': [1, 7, 8], 'y': [3, 8, 14]}], filename = 'My First Plotly', show_link = True, link_text = "Plotly Links", image = 'png', image_height = 800, image_width = 900)
 ```
+
+**執行結果**
+
+![5](images\5.PNG)
 
 
 
